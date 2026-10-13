@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Rekapan & SLA Komplain CS - Full Version</title>
+    <!-- Chart.js untuk visualisasi tren bulanan & performa -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #2563eb;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            background: var(--card);
+            padding: 20px 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .header-title h1 {
+            margin: 0 0 4px 0;
+            font-size: 20px;
+            color: var(--primary);
+        }
+        .header-title .subtitle {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        .kpi-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--muted);
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .kpi-val {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            font-variant-numeric: tabular-nums;
+        }
+        .kpi-sub {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* Visual Analytics Grid */
+        .analytics-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 900px) {
+            .analytics-section { grid-template-columns: 1fr; }
+        }
+        .chart-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .chart-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Category Performance Progress Bars */
+        .cat-perf-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .cat-perf-item {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .cat-perf-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .bar-container {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+        }
+        .bar-ontime { background: var(--success); height: 100%; }
+        .bar-late { background: var(--danger); height: 100%; }
+        .bar-process { background: var(--warning); height: 100%; }
+
+        /* Form Input */
+        .form-section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 13px;
+            background: #fff;
+            color: var(--text);
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .full-width { grid-column: 1 / -1; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .btn-primary { background: #16a34a; color: white; }
+        .btn-primary:hover { background: #15803d; }
+        .btn-download { background: #2563eb; color: white; }
+        .btn-download:hover { background: #1d4ed8; }
+        .btn-secondary { background: #e2e8f0; color: #334155; }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Filter Controls */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .filter-bar input, .filter-bar select {
+            padding: 6px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 12px;
+            background: white;
+        }
+
+        /* Data Table */
+        .table-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .table-responsive {
+            overflow-x: auto;
+            max-height: 520px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+            min-width: 950px;
+        }
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        th {
+            background: #0f172a;
+            color: #f8fafc;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-weight: 600;
+        }
+        tr:hover { background: #f8fafc; }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .badge-cat { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+        .badge-done { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .badge-proses { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .badge-ontime { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .badge-late { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+        /* Modal Period Download */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+        }
+        .modal {
+            background: white;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <header>
+        <div class="header-title">
+            <h1>Aplikasi Rekapan &amp; SLA Komplain CS</h1>
+            <div class="subtitle">
+                Target SLA: <strong>3 Hari Kerja</strong> · Jam Operasional: Sen-Jum (09.20-16.25), Sab (09.20-11.55), Minggu Libur
+            </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-download" onclick="openExportModal()">📥 Download Rekap Periode</button>
+            <button class="btn btn-secondary" onclick="resetToSample()">🔄 Data Contoh</button>
+        </div>
+    </header>
+
+    <!-- KPI Metric Cards -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">Total Komplain</div>
+            <div class="kpi-val" id="kpi-total">0</div>
+            <div class="kpi-sub" id="kpi-sub-total">0 Selesai · 0 Proses</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Kepatuhan SLA (3 Hari)</div>
+            <div class="kpi-val" id="kpi-sla" style="color:#16a34a;">0%</div>
+            <div class="kpi-sub">Target On-Time Tercapai</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Terlambat / Overdue</div>
+            <div class="kpi-val" id="kpi-late" style="color:#dc2626;">0</div>
+            <div class="kpi-sub">Melewati 3 Hari Kerja</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Kategori Terbanyak</div>
+            <div class="kpi-val" id="kpi-top-cat" style="font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">-</div>
+            <div class="kpi-sub" id="kpi-top-count">0 tiket masuk</div>
+        </div>
+    </div>
+
+    <!-- Analisis Visual: Tren Bulanan & Performa Kategori -->
+    <div class="analytics-section">
+        <!-- Chart 1: Tren Bulanan -->
+        <div class="chart-box">
+            <div class="chart-title">
+                <span>📈 Tren Komplain Bulanan &amp; Kepatuhan SLA</span>
+                <span style="font-size:11px; font-weight:normal; color:#64748b;">(Target SLA: 3 Hari Kerja)</span>
+            </div>
+            <div style="height: 250px;">
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 2: Performa Kategori Komplain -->
+        <div class="chart-box">
+            <div class="chart-title">
+                <span>📊 Proporsi Kategori Komplain</span>
+            </div>
+            <div style="height: 250px;">
+                <canvas id="categoryDonutChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Input Komplain Baru (Dengan Dropdown 9 Kategori Sesuai Permintaan) -->
+    <div class="form-section">
+        <h3 style="margin-top: 0; font-size: 15px; color: var(--primary);">Form Input Komplain Baru</h3>
+        <form id="complain-form" onsubmit="tambahKomplain(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Tanggal &amp; Jam Komplain (Auto):</label>
+                    <input type="text" id="in-tgl" readonly style="background-color: #f1f5f9; font-weight: bold;">
+                </div>
+                <div class="form-group">
+                    <label for="in-nama">Nama Agen / PIC: *</label>
+                    <input type="text" id="in-nama" required placeholder="Contoh: Rian Tour / Ags-CS">
+                </div>
+                <!-- REVISI A: DROP DOWN 9 KATEGORI KOMPLAIN -->
+                <div class="form-group">
+                    <label for="in-kategori">Kategori Komplain (Drop Down): *</label>
+                    <select id="in-kategori" required onchange="cekKategoriOther(this.value)">
+                        <option value="Komunikasi agen dengan freshnel">1. Komunikasi agen dengan freshnel</option>
+                        <option value="Ketidaksesuaian order dari agen">2. Ketidaksesuaian order dari agen</option>
+                        <option value="Time limit schedule maju">3. Time limit schedule maju</option>
+                        <option value="Issued Tiket lama" selected>4. Issued Tiket lama</option>
+                        <option value="Revisi tidak keluar-keluar dari Maskapai">5. Revisi tidak keluar-keluar dari Maskapai</option>
+                        <option value="Insertname tikda keluar2">6. Insertname tikda keluar2</option>
+                        <option value="Request New Booking tidak keluar2">7. Request New Booking tidak keluar2</option>
+                        <option value="Invoicing">8. Invoicing</option>
+                        <option value="other">9. other</option>
+                    </select>
+                </div>
+
+                <!-- Input Keterangan Jika "other" dipilih -->
+                <div class="form-group" id="group-other" style="display:none;">
+                    <label for="in-other-detail">Keterangan Tambahan (Khusus Other):</label>
+                    <input type="text" id="in-other-detail" placeholder="Sebutkan detail kendala...">
+                </div>
+
+                <div class="form-group">
+                    <label for="in-tiket">No. Tiket / PNR / Booking Code (Opsional):</label>
+                    <input type="text" id="in-tiket" placeholder="Contoh: GA-892109 / PNR: 4X9KZP">
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="in-isi">Isi Komplain / Rincian Kendala: *</label>
+                    <textarea id="in-isi" rows="2" required placeholder="Jelaskan detail kronologi, kendala penumpang/agen, dan permintaan..."></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label for="in-catatan">Update / Catatan Awal (Opsional):</label>
+                    <input type="text" id="in-catatan" placeholder="Catatan penanganan awal jika ada...">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">💾 Simpan Komplain Baru</button>
+        </form>
+    </div>
+
+    <!-- Toolbar & Filter Tabel -->
+    <div class="toolbar">
+        <div class="filter-bar">
+            <input type="text" id="search-input" placeholder="🔍 Cari agen, nomor tiket, atau keluhan..." oninput="renderTabel()" style="min-width: 240px;">
+            
+            <select id="filter-kategori" onchange="renderTabel()">
+                <option value="ALL">Semua 9 Kategori</option>
+                <option value="Komunikasi agen dengan freshnel">1. Komunikasi Freshnel</option>
+                <option value="Ketidaksesuaian order dari agen">2. Ketidaksesuaian Order</option>
+                <option value="Time limit schedule maju">3. Time Limit Maju</option>
+                <option value="Issued Tiket lama">4. Issued Tiket Lama</option>
+                <option value="Revisi tidak keluar-keluar dari Maskapai">5. Revisi Maskapai</option>
+                <option value="Insertname tikda keluar2">6. Insert Name</option>
+                <option value="Request New Booking tidak keluar2">7. Request New Booking</option>
+                <option value="Invoicing">8. Invoicing</option>
+                <option value="other">9. Other</option>
+            </select>
+
+            <select id="filter-status" onchange="renderTabel()">
+                <option value="ALL">Semua Status</option>
+                <option value="Proses">Masih Proses</option>
+                <option value="Done">Selesai (Done)</option>
+            </select>
+        </div>
+
+        <div style="font-size:12px; color:#64748b;">
+            Total: <strong id="count-filtered" style="color:#0f172a;">0</strong> data
+        </div>
+    </div>
+
+    <!-- Tabel Rekapan Komplain -->
+    <div class="table-card">
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tgl Komplain</th>
+                        <th>Nama Agen</th>
+                        <th>Kategori Komplain</th>
+                        <th>No Tiket/PNR</th>
+                        <th style="min-width:220px;">Isi Komplain</th>
+                        <th>Status &amp; Tgl Selesai</th>
+                        <th>Indikator Target SLA (3 Hari)</th>
+                        <th style="min-width:180px;">Update / Catatan</th>
+                        <th style="text-align:center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="complain-table-body">
+                    <!-- Data masuk otomatis -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Download Periode Tertentu (REVISI B) -->
+<div class="modal-overlay" id="exportModal">
+    <div class="modal">
+        <h3 style="margin-top:0; font-size:16px; color:#0f172a;">📥 Download Rekap Periode Tertentu</h3>
+        <p style="font-size:12px; color:#64748b; margin-bottom:15px;">
+            Pilih rentang tanggal untuk mengunduh rekapitulasi data komplain beserta kalkulasi SLA.
+        </p>
+
+        <div style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Preset Periode:</label>
+            <select id="export-preset" onchange="updateExportPreset(this.value)" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px;">
+                <option value="this_month">Bulan Ini</option>
+                <option value="last_month">Bulan Lalu</option>
+                <option value="7days">7 Hari Terakhir</option>
+                <option value="30days">30 Hari Terakhir</option>
+                <option value="all">Semua Data</option>
+                <option value="custom">Kustom Rentang Tanggal</option>
+            </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+            <div>
+                <label style="font-size:11px; font-weight:600; display:block; margin-bottom:3px;">Dari Tanggal:</label>
+                <input type="date" id="export-start" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px;">
+            </div>
+            <div>
+                <label style="font-size:11px; font-weight:600; display:block; margin-bottom:3px;">Sampai Tanggal:</label>
+                <input type="date" id="export-end" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px;">
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-primary" style="flex:1;" onclick="downloadExcel()">📊 Download Excel (.xls)</button>
+            <button class="btn btn-secondary" onclick="closeExportModal()">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 9 Kategori Sesuai Permintaan
+    const CATEGORIES = [
+        "Komunikasi agen dengan freshnel",
+        "Ketidaksesuaian order dari agen",
+        "Time limit schedule maju",
+        "Issued Tiket lama",
+        "Revisi tidak keluar-keluar dari Maskapai",
+        "Insertname tikda keluar2",
+        "Request New Booking tidak keluar2",
+        "Invoicing",
+        "other"
+    ];
+
+    let listKomplain = JSON.parse(localStorage.getItem('sla_complains_v3')) || [];
+
+    // Jika data kosong, masukkan data seed contoh realistis
+    if (listKomplain.length === 0) {
+        listKomplain = [
+            {
+                id: 101,
+                tglKomplain: "2026-07-04T09:45:00.000Z",
+                namaAgen: "Rian Travel Mandiri",
+                kategori: "Issued Tiket lama",
+                nomorTiket: "GA-892109",
+                isi: "Tiket Garuda lunas 4 jam lalu tapi belum keluar e-ticket.",
+                status: "Done",
+                tglDone: "2026-07-05T14:30:00.000Z",
+                catatan: "[05-07-2026 14:30] Tiket berhasil issued."
+            },
+            {
+                id: 102,
+                tglKomplain: "2026-07-12T11:20:00.000Z",
+                namaAgen: "Indo Tour & Travel",
+                kategori: "Time limit schedule maju",
+                nomorTiket: "QG-55102",
+                isi: "Time limit Citilink dimajukan 6 jam lebih awal oleh maskapai.",
+                status: "Done",
+                tglDone: "2026-07-14T09:00:00.000Z",
+                catatan: "[14-07-2026 09:00] Berhasil extend time limit."
+            },
+            {
+                id: 103,
+                tglKomplain: "2026-08-18T09:30:00.000Z",
+                namaAgen: "Panorama Borneo",
+                kategori: "Insertname tikda keluar2",
+                nomorTiket: "ID-62001",
+                isi: "Insert nama 15 pax rombongan Batik Air pending terus di PNR.",
+                status: "Done",
+                tglDone: "2026-08-20T15:00:00.000Z",
+                catatan: "[20-08-2026 15:00] 15 nama sudah tertera di manifest."
+            },
+            {
+                id: 104,
+                tglKomplain: "2026-09-08T11:00:00.000Z",
+                namaAgen: "Cahaya Timur Tour",
+                kategori: "Issued Tiket lama",
+                nomorTiket: "IU-30219",
+                isi: "Issued Super Air Jet delay karena sistem queue maskapai down.",
+                status: "Done",
+                tglDone: "2026-09-09T14:15:00.000Z",
+                catatan: "[09-09-2026 14:15] E-ticket terbit."
+            },
+            {
+                id: 105,
+                tglKomplain: "2026-09-14T09:40:00.000Z",
+                namaAgen: "Global Holiday",
+                kategori: "Revisi tidak keluar-keluar dari Maskapai",
+                nomorTiket: "GA-77123",
+                isi: "Reschedule flight GA belum ada update konfirmasi selisih kelas.",
+                status: "Done",
+                tglDone: "2026-09-19T10:00:00.000Z", // Terlambat lewat 3 hari kerja
+                catatan: "[19-09-2026 10:00] Selesai setelah eskalasi."
+            },
+            {
+                id: 106,
+                tglKomplain: "2026-10-08T10:40:00.000Z",
+                namaAgen: "Mitra Semesta Tour",
+                kategori: "Komunikasi agen dengan freshnel",
+                nomorTiket: "FN-20194",
+                isi: "Pesan chat helpdesk Freshnel tidak dibalas lebih dari 2 jam.",
+                status: "Done",
+                tglDone: "2026-10-09T14:00:00.000Z",
+                catatan: "[09-10-2026 14:00] Dihubungi supervisor CS."
+            },
+            {
+                id: 107,
+                tglKomplain: "2026-10-10T11:15:00.000Z",
+                namaAgen: "Sentosa Express",
+                kategori: "Request New Booking tidak keluar2",
+                nomorTiket: "REQ-99321",
+                isi: "Request booking grup 25 pax belum keluar booking code.",
+                status: "Proses",
+                tglDone: "-",
+                catatan: "[10-10-2026 11:30] Menunggu kuota kursi maskapai."
+            },
+            {
+                id: 108,
+                tglKomplain: "2026-10-11T14:30:00.000Z",
+                namaAgen: "Bumi Wisata Abadi",
+                kategori: "Invoicing",
+                nomorTiket: "INV-202610-04",
+                isi: "Permintaan faktur pajak terpisah per tiket untuk korporat.",
+                status: "Proses",
+                tglDone: "-",
+                catatan: "[11-10-2026 15:00] Diteruskan ke tim finance."
+            }
+        ];
+        simpanData();
+    }
+
+    function setWaktuOtomatis() {
+        let now = new Date();
+        document.getElementById('in-tgl').value = formatWaktu(now);
+    }
+
+    function formatWaktu(dateObj) {
+        if (!dateObj || dateObj === '-') return '-';
+        let d = new Date(dateObj);
+        if (isNaN(d.getTime())) return '-';
+        let tgl = String(d.getDate()).padStart(2, '0');
+        let bln = String(d.getMonth() + 1).padStart(2, '0');
+        let thn = d.getFullYear();
+        let jam = String(d.getHours()).padStart(2, '0');
+        let mnt = String(d.getMinutes()).padStart(2, '0');
+        return `${tgl}-${bln}-${thn} ${jam}:${mnt}`;
+    }
+
+    function cekKategoriOther(val) {
+        document.getElementById('group-other').style.display = (val === 'other') ? 'block' : 'none';
+    }
+
+    // Kalkulasi SLA 3 Hari Kerja (Minggu libur)
+    function hitungTargetSLA(startDateStr) {
+        let start = new Date(startDateStr);
+        let daysAdded = 0;
+        let curr = new Date(start);
+        while (daysAdded < 3) {
+            curr.setDate(curr.getDate() + 1);
+            if (curr.getDay() !== 0) daysAdded++;
+        }
+        return curr;
+    }
+
+    function hitungIndikatorTarget(startDateStr, doneDateStr, status) {
+        let targetSelesai = hitungTargetSLA(startDateStr);
+        if (status === 'Done') {
+            let doneDate = new Date(doneDateStr);
+            if (doneDate <= targetSelesai) {
+                return '<span class="badge badge-ontime">✅ Terpenuhi (Tepat Waktu)</span>';
+            } else {
+                return '<span class="badge badge-late">❌ Tidak Terpenuhi (Terlambat)</span>';
+            }
+        } else {
+            if (new Date() <= targetSelesai) {
+                return '<span class="badge badge-proses">⏳ Masih Proses (Dalam Target)</span>';
+            } else {
+                return '<span class="badge badge-late">⚠️ Masih Proses (Lewat Target)</span>';
+            }
+        }
+    }
+
+    function tambahKomplain(e) {
+        e.preventDefault();
+        let kat = document.getElementById('in-kategori').value;
+        let otherDetail = document.getElementById('in-other-detail').value.trim();
+
+        let komplainBaru = {
+            id: Date.now(),
+            tglKomplain: new Date().toISOString(),
+            namaAgen: document.getElementById('in-nama').value.trim(),
+            kategori: kat,
+            kategoriDetail: (kat === 'other' && otherDetail) ? otherDetail : '',
+            nomorTiket: document.getElementById('in-tiket').value.trim(),
+            isi: document.getElementById('in-isi').value.trim(),
+            status: 'Proses',
+            tglDone: '-',
+            catatan: document.getElementById('in-catatan').value.trim() || '-'
+        };
+
+        listKomplain.unshift(komplainBaru);
+        simpanData();
+        renderTabel();
+        updateKPI();
+        updateCharts();
+        document.getElementById('complain-form').reset();
+        cekKategoriOther('');
+        setWaktuOtomatis();
+        alert("✅ Komplain baru berhasil disimpan!");
+    }
+
+    function updateCatatanStatus(id) {
+        let item = listKomplain.find(k => k.id === id);
+        if (!item) return;
+
+        let statusBaru = prompt("Ubah Status Komplain:\nKetik 'Proses' atau 'Done'", item.status);
+        if (statusBaru === null) return;
+        statusBaru = statusBaru.trim().toLowerCase();
+
+        let formattedStatus = '';
+        if (statusBaru === 'done') {
+            formattedStatus = 'Done';
+        } else if (statusBaru === 'proses') {
+            formattedStatus = 'Proses';
+        } else {
+            alert("Status harus 'Proses' atau 'Done'!");
+            return;
+        }
+
+        let catatanBaru = prompt("Masukkan Update / Catatan Tindakan:", "");
+        if (catatanBaru === null) return;
+
+        item.status = formattedStatus;
+        if (formattedStatus === 'Done') {
+            item.tglDone = new Date().toISOString();
+        } else {
+            item.tglDone = '-';
+        }
+
+        if (catatanBaru.trim() !== '') {
+            let timestamp = `[${formatWaktu(new Date())}] ${catatanBaru.trim()}`;
+            item.catatan = item.catatan === '-' ? timestamp : `${item.catatan}<br>${timestamp}`;
+        }
+
+        simpanData();
+        renderTabel();
+        updateKPI();
+        updateCharts();
+    }
+
+    function hapusKomplain(id) {
+        if (confirm("Hapus komplain ini?")) {
+            listKomplain = listKomplain.filter(k => k.id !== id);
+            simpanData();
+            renderTabel();
+            updateKPI();
+            updateCharts();
+        }
+    }
+
+    function simpanData() {
+        localStorage.setItem('sla_complains_v3', JSON.stringify(listKomplain));
+    }
+
+    function renderTabel() {
+        let tbody = document.getElementById('complain-table-body');
+        tbody.innerHTML = '';
+
+        let search = document.getElementById('search-input').value.toLowerCase();
+        let catFilter = document.getElementById('filter-kategori').value;
+        let statusFilter = document.getElementById('filter-status').value;
+
+        let filtered = listKomplain.filter(k => {
+            if (search) {
+                let matchAgent = k.namaAgen.toLowerCase().includes(search);
+                let matchIsi = k.isi.toLowerCase().includes(search);
+                let matchTiket = (k.nomorTiket || '').toLowerCase().includes(search);
+                if (!matchAgent && !matchIsi && !matchTiket) return false;
+            }
+            if (catFilter !== 'ALL' && k.kategori !== catFilter) return false;
+            if (statusFilter !== 'ALL' && k.status !== statusFilter) return false;
+            return true;
+        });
+
+        document.getElementById('count-filtered').innerText = filtered.length;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:#94a3b8;">Tidak ada data komplain yang sesuai.</td></tr>`;
+            return;
+        }
+
+        filtered.forEach(k => {
+            let tr = document.createElement('tr');
+            let statusBadge = k.status === 'Done' ? 
+                `<span class="badge badge-done">Done</span><div style="font-size:10px; color:#64748b; margin-top:2px;">${formatWaktu(k.tglDone)}</div>` : 
+                `<span class="badge badge-proses">Proses</span>`;
+
+            let slaBadge = hitungIndikatorTarget(k.tglKomplain, k.tglDone, k.status);
+
+            let catLabel = k.kategori;
+            if (k.kategoriDetail) catLabel += ` <small style="color:#64748b;">(${k.kategoriDetail})</small>`;
+
+            tr.innerHTML = `
+                <td style="font-family:monospace; color:#475569;">${formatWaktu(k.tglKomplain)}</td>
+                <td><strong>${k.namaAgen}</strong></td>
+                <td><span class="badge badge-cat">${catLabel}</span></td>
+                <td style="font-family:monospace;">${k.nomorTiket || '-'}</td>
+                <td>${k.isi}</td>
+                <td>${statusBadge}</td>
+                <td>${slaBadge}</td>
+                <td><small>${k.catatan}</small></td>
+                <td style="text-align:center; white-space:nowrap;">
+                    <button class="btn btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="updateCatatanStatus(${k.id})">✏️ Update</button>
+                    <button class="btn btn-danger" style="padding:4px 8px; font-size:11px;" onclick="hapusKomplain(${k.id})">🗑️</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function updateKPI() {
+        let total = listKomplain.length;
+        let done = listKomplain.filter(k => k.status === 'Done').length;
+        let proses = total - done;
+
+        let onTime = 0;
+        let late = 0;
+        let catCount = {};
+
+        listKomplain.forEach(k => {
+            catCount[k.kategori] = (catCount[k.kategori] || 0) + 1;
+            let target = hitungTargetSLA(k.tglKomplain);
+            if (k.status === 'Done') {
+                if (new Date(k.tglDone) <= target) onTime++;
+                else late++;
+            } else {
+                if (new Date() > target) late++;
+            }
+        });
+
+        let slaRate = done > 0 ? Math.round((onTime / done) * 100) : 0;
+
+        document.getElementById('kpi-total').innerText = total;
+        document.getElementById('kpi-sub-total').innerText = `${done} Selesai · ${proses} Proses`;
+        document.getElementById('kpi-sla').innerText = `${slaRate}%`;
+        document.getElementById('kpi-late').innerText = late;
+
+        let topCat = '-';
+        let topCount = 0;
+        for (let cat in catCount) {
+            if (catCount[cat] > topCount) {
+                topCount = catCount[cat];
+                topCat = cat;
+            }
+        }
+        document.getElementById('kpi-top-cat').innerText = topCat;
+        document.getElementById('kpi-top-count').innerText = `${topCount} tiket komplain`;
+    }
+
+    // Visual Charts (Chart.js)
+    let trendChartInstance = null;
+    let donutChartInstance = null;
+
+    function updateCharts() {
+        // 1. Data Tren Bulanan (6 Bulan Terakhir)
+        let months = ['Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt'];
+        let monthlyData = [0, 0, 0, 0, 0, 0];
+        let monthlyOnTime = [0, 0, 0, 0, 0, 0];
+
+        listKomplain.forEach(k => {
+            let d = new Date(k.tglKomplain);
+            let m = d.getMonth(); // 0 = Jan, 4 = Mei, 9 = Okt
+            let idx = m - 4; // index 0-5
+            if (idx >= 0 && idx < 6) {
+                monthlyData[idx]++;
+                if (k.status === 'Done' && new Date(k.tglDone) <= hitungTargetSLA(k.tglKomplain)) {
+                    monthlyOnTime[idx]++;
+                }
+            }
+        });
+
+        let ctx1 = document.getElementById('monthlyTrendChart').getContext('2d');
+        if (trendChartInstance) trendChartInstance.destroy();
+        trendChartInstance = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: months.map(m => m + ' 2026'),
+                datasets: [
+                    {
+                        label: 'Total Masuk',
+                        data: monthlyData,
+                        backgroundColor: '#93c5fd',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Selesai Tepat Waktu (SLA)',
+                        data: monthlyOnTime,
+                        backgroundColor: '#16a34a',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+
+        // 2. Data Donut Kategori
+        let catLabels = [];
+        let catCounts = [];
+        let colors = ['#2563eb','#d97706','#e11d48','#9333ea','#4f46e5','#0891b2','#0d9488','#059669','#64748b'];
+
+        CATEGORIES.forEach(cat => {
+            let count = listKomplain.filter(k => k.kategori === cat).length;
+            if (count > 0) {
+                catLabels.push(cat);
+                catCounts.push(count);
+            }
+        });
+
+        let ctx2 = document.getElementById('categoryDonutChart').getContext('2d');
+        if (donutChartInstance) donutChartInstance.destroy();
+        donutChartInstance = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    data: catCounts,
+                    backgroundColor: colors.slice(0, catLabels.length)
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } }
+                }
+            }
+        });
+    }
+
+    // Export Modal & Download Logic (B)
+    function openExportModal() {
+        document.getElementById('exportModal').style.display = 'flex';
+        updateExportPreset('this_month');
+    }
+
+    function closeExportModal() {
+        document.getElementById('exportModal').style.display = 'none';
+    }
+
+    function updateExportPreset(preset) {
+        let now = new Date();
+        let start = document.getElementById('export-start');
+        let end = document.getElementById('export-end');
+
+        if (preset === 'this_month') {
+            start.value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            end.value = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+        } else if (preset === 'last_month') {
+            start.value = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
+            end.value = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
+        } else if (preset === '7days') {
+            let past = new Date(); past.setDate(past.getDate() - 7);
+            start.value = past.toISOString().split('T')[0];
+            end.value = now.toISOString().split('T')[0];
+        } else if (preset === '30days') {
+            let past = new Date(); past.setDate(past.getDate() - 30);
+            start.value = past.toISOString().split('T')[0];
+            end.value = now.toISOString().split('T')[0];
+        } else if (preset === 'all') {
+            start.value = '';
+            end.value = '';
+        }
+    }
+
+    function downloadExcel() {
+        let startDate = document.getElementById('export-start').value;
+        let endDate = document.getElementById('export-end').value;
+
+        let filtered = listKomplain.filter(k => {
+            let d = new Date(k.tglKomplain);
+            if (startDate && d < new Date(startDate)) return false;
+            if (endDate) {
+                let e = new Date(endDate);
+                e.setHours(23, 59, 59);
+                if (d > e) return false;
+            }
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            alert("Tidak ada data komplain pada rentang tanggal yang dipilih!");
+            return;
+        }
+
+        let html = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head><meta charset="utf-8"></head>
+            <body>
+                <h2>REKAPITULASI KOMPLAIN & INDIKATOR SLA CS</h2>
+                <p>Periode: ${startDate || 'Awal'} s/d ${endDate || 'Sekarang'} | Target SLA: 3 Hari Kerja</p>
+                <table border="1">
+                    <thead>
+                        <tr style="background-color:#1e293b; color:white;">
+                            <th>No</th>
+                            <th>Tgl Komplain</th>
+                            <th>Nama Agen</th>
+                            <th>Kategori Komplain</th>
+                            <th>No Tiket/PNR</th>
+                            <th>Isi Komplain</th>
+                            <th>Status</th>
+                            <th>Tgl Selesai</th>
+                            <th>Indikator Target SLA</th>
+                            <th>Catatan Tindakan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        filtered.forEach((k, idx) => {
+            let target = hitungTargetSLA(k.tglKomplain);
+            let slaText = '';
+            if (k.status === 'Done') {
+                slaText = new Date(k.tglDone) <= target ? 'Terpenuhi (Tepat Waktu)' : 'Tidak Terpenuhi (Terlambat)';
+            } else {
+                slaText = new Date() <= target ? 'Masih Proses (Dalam Target)' : 'Masih Proses (Lewat Target)';
+            }
+
+            html += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${formatWaktu(k.tglKomplain)}</td>
+                    <td>${k.namaAgen}</td>
+                    <td>${k.kategori} ${k.kategoriDetail ? '(' + k.kategoriDetail + ')' : ''}</td>
+                    <td>${k.nomorTiket || '-'}</td>
+                    <td>${k.isi}</td>
+                    <td>${k.status}</td>
+                    <td>${formatWaktu(k.tglDone)}</td>
+                    <td>${slaText}</td>
+                    <td>${k.catatan.replace(/<br>/g, ' | ')}</td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table></body></html>`;
+
+        let blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.href = url;
+        a.download = `Rekap_Komplain_SLA_${startDate || 'Semua'}_sd_${endDate || 'Data'}.xls`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        closeExportModal();
+    }
+
+    function resetToSample() {
+        localStorage.removeItem('sla_complains_v3');
+        location.reload();
+    }
+
+    setWaktuOtomatis();
+    renderTabel();
+    updateKPI();
+    updateCharts();
+</script>
+
+</body>
+</html>

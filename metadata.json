@@ -1,0 +1,7 @@
+{
+  "name": "Rekapan & SLA Komplain CS",
+  "description": "Sistem monitoring komplain CS tiket & agen dengan SLA 3 hari kerja, analisis tren bulanan, performa per kategori, dan ekspor data berbasis periode.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
